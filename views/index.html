@@ -3,21 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <title>Jokebook</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; }
+    h1, h2 { color: #333; }
+    button, input, select { margin: 5px 0; padding: 8px; }
+    textarea { width: 100%; height: 60px; }
+    .joke { margin-bottom: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+  </style>
 </head>
 <body>
-  <h1>Random Joke</h1>
-  <div id="joke">Loading...</div>
+  <h1>Jokebook</h1>
+
+  <h2>Random Joke</h2>
+  <div id="random-joke">Loading...</div>
+
+  <hr>
+
+  <h2>Browse Categories</h2>
+  <button id="load-categories">Load Categories</button>
+  <select id="category-dropdown"></select>
+  <button id="view-jokes">View Jokes</button>
+  <div id="joke-list"></div>
+
+  <hr>
+
+  <h2>Search by Category Name</h2>
+  <input type="text" id="search-input" placeholder="Enter category name" />
+  <button id="search-btn">Search</button>
+
+  <hr>
+
+  <h2>Add a New Joke</h2>
+  <form id="joke-form">
+    <input type="text" id="new-category" placeholder="Category" required><br>
+    <textarea id="new-setup" placeholder="Setup" required></textarea><br>
+    <textarea id="new-delivery" placeholder="Delivery" required></textarea><br>
+    <button type="submit">Add Joke</button>
+  </form>
+
+  <div id="add-result"></div>
 
   <script>
+    // Load random joke on page load
     fetch('/jokebook/random')
       .then(res => res.json())
       .then(data => {
-        document.getElementById('joke').innerHTML =
-          `<p>${data.setup}</p><p><strong>${data.delivery}</strong></p>`;
+        document.getElementById('random-joke').innerHTML =
+          '<p>' + data.setup + '</p><p><strong>' + data.delivery + '</strong></p>';
+      });
+
+    // Load categories
+    document.getElementById('load-categories').onclick = function() {
+      fetch('/jokebook/categories')
+        .then(res => res.json())
+        .then(categories => {
+          const dropdown = document.getElementById('category-dropdown');
+          dropdown.innerHTML = '';
+          categories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            dropdown.appendChild(option);
+          });
+        });
+    };
+
+    // View jokes in selected category
+    document.getElementById('view-jokes').onclick = function() {
+      const cat = document.getElementById('category-dropdown').value;
+      fetch(`/jokebook/joke/${cat}`)
+        .then(res => res.json())
+        .then(jokes => showJokes(jokes));
+    };
+
+    // Search jokes by category name
+    document.getElementById('search-btn').onclick = function() {
+      const cat = document.getElementById('search-input').value;
+      fetch(`/jokebook/joke/${cat}`)
+        .then(res => res.json())
+        .then(jokes => showJokes(jokes));
+    };
+
+    // Add new joke
+    document.getElementById('joke-form').onsubmit = function(e) {
+      e.preventDefault();
+      const category = document.getElementById('new-category').value;
+      const setup = document.getElementById('new-setup').value;
+      const delivery = document.getElementById('new-delivery').value;
+
+      fetch('/jokebook/joke/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, setup, delivery })
+      })
+      .then(res => res.json())
+      .then(jokes => {
+        document.getElementById('add-result').textContent = "Joke added!";
+        showJokes(jokes);
       })
       .catch(err => {
-        document.getElementById('joke').innerText = "Error loading joke.";
+        document.getElementById('add-result').textContent = "Error adding joke.";
       });
+    };
+
+    function showJokes(jokes) {
+      const container = document.getElementById('joke-list');
+      container.innerHTML = '';
+      jokes.forEach(joke => {
+        const div = document.createElement('div');
+        div.className = 'joke';
+        div.innerHTML = `<p><strong>${joke.category}</strong></p><p>${joke.setup}</p><p><em>${joke.delivery}</em></p>`;
+        container.appendChild(div);
+      });
+    }
   </script>
 </body>
 </html>
