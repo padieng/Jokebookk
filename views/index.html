@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jokebook</title>
+</head>
+<body>
+  <h1>Random Joke</h1>
+  <div id="joke">Loading...</div>
+
+  <script>
+    fetch('/jokebook/random')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('joke').innerHTML =
+          `<p>${data.setup}</p><p><strong>${data.delivery}</strong></p>`;
+      })
+      .catch(err => {
+        document.getElementById('joke').innerText = "Error loading joke.";
+      });
+  </script>
+</body>
+</html>
